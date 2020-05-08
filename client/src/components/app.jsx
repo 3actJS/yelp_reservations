@@ -14,21 +14,28 @@ import MonthSelector from './MonthSelector.jsx';
 import NextMonthButton from './NextMonthButton.jsx';
 import PreviousMonthButton from './PreviousMonthButton.jsx';
 import CalendarTable from './CalendarTable.jsx';
+import ReservationBox from './ReservationBox.jsx';
+
 
 class App extends React.Component {
   constructor(props) {
     super(props);
+    this.day = new Date().getDate();
+    this.year = new Date().getYear() + 1900;
+    this.month = new Date().getMonth();
+    this.todaysId = calendarHelpers.createId(this.year, this.month, this.day);
     this.state = {
       dates_closed: [],
       restaurant_name: '',
       timeslots: [],
       todaysDate: new Date(), // .getDate() for number
-      selectedDate: new Date(),
-      months: calendarHelpers.getSurroundingMonths(),
+      selectedDate: this.todaysId,
+      latestMonthAllowed: calendarHelpers.getLatestMonth(this.month),
       selectedMonthNumber: new Date().getMonth(),
       selectedYear: new Date().getYear() + 1900,
       rowsOfSelectedMonth: calendarHelpers.allWeekRows(new Date().getYear()
         + 1900, new Date().getMonth()),
+      displayCalendar: true,
     };
   }
 
@@ -82,6 +89,32 @@ class App extends React.Component {
     });
   }
 
+  isPast(id) {
+    return parseFloat(id) < this.todaysId;
+  }
+
+  isToday(id) {
+    return parseFloat(id) === this.todaysId;
+  }
+
+  selectDate(e) {
+    this.setState({
+      selectedDate: parseFloat(e.target.id),
+    });
+  }
+
+  showCalendar() {
+    this.setState({
+      displayCalendar: true,
+    });
+  }
+
+  hideCalendar() {
+    this.setState({
+      displayCalendar: false,
+    });
+  }
+
   render() {
     return (
       <div className='calendar-container'>Testing
@@ -90,11 +123,16 @@ class App extends React.Component {
         <p>Restaurant: {this.state.restaurant_name}</p>
         <p>Time Slots: {JSON.stringify(this.state.timeslots)}</p>
         <p>Days Closed: {JSON.stringify(this.state.dates_closed)}</p>
-        <CalendarWrapper>
+        <ReservationBox/>
+        <button onClick={this.showCalendar.bind(this)}>Show Calendar</button>
+        <button onClick={this.hideCalendar.bind(this)}>Hide Calendar</button>
+        <CalendarWrapper displayed={this.state.displayCalendar}>
         <MonthSelector>
-          <PreviousMonthButton onClick={this.getPreviousMonth.bind(this)}/>
+          <PreviousMonthButton onClick={this.getPreviousMonth.bind(this)}
+          disabled={this.month === this.state.selectedMonthNumber}/>
           {calendarHelpers.monthNumToName(this.state.selectedMonthNumber)} {this.state.selectedYear}
-          <NextMonthButton onClick={this.getNextMonth.bind(this)}/>
+          <NextMonthButton onClick={this.getNextMonth.bind(this)
+          } disabled={this.state.selectedMonthNumber === this.state.latestMonthAllowed}/>
         </MonthSelector>
           <CalendarTable.Wrapper>
             <CalendarTable.Table>
@@ -102,7 +140,15 @@ class App extends React.Component {
               <WeekdayRow>{calendarHelpers.weekdays.map((day) => <td>{day}</td>)}
                 </WeekdayRow>
               {this.state.rowsOfSelectedMonth.map((row) => <CalendarRow>
-                {row.map((dayObj) => <CalendarDate>{dayObj.day}</CalendarDate>)}
+                {row.map((item) => <CalendarDate
+                onClick={this.selectDate.bind(this)}
+                id={calendarHelpers.createId(item.yr, item.mo, item.day)}
+                past={this.isPast(calendarHelpers.createId(item.yr, item.mo, item.day))}
+                isToday={this.isToday(calendarHelpers.createId(item.yr, item.mo, item.day))}
+                selected={calendarHelpers.createId(item.yr, item.mo,
+                  item.day) === this.state.selectedDate}>
+                  {item.day}
+                </CalendarDate>)}
               </CalendarRow>)}
               </tbody>
             </CalendarTable.Table>
@@ -115,3 +161,15 @@ class App extends React.Component {
 
 // eslint-disable-next-line no-undef
 ReactDOM.render(<App />, document.getElementById('app'));
+
+// assign unique numerical values as ids to each table cell - done
+// check if each cell's value is less than the value of the current date
+// if so, add a class unselectable to those cells
+
+// this class should make it unclickable, greyed out, and have no hover effect
+
+// disable next or previous month clicker if the next or previous month isn't in the surrounding mos
+
+// after completion of render, get the element where id is equal to the identifier for today's date
+
+// research how to have a table cell as selected value, apply a 'selected' class to that (as state)
